@@ -4,13 +4,14 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const dotenv = require("dotenv");
 
+dotenv.config();
+
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const subRoutes = require("./routes/subRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const { attachUser } = require("./middleware/auth");
 
-dotenv.config();
 connectDB();
 
 const app = express();
