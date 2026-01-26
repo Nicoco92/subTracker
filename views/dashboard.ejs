@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - SubTracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container py-4">
+    <%- include('partials/navbar') %>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Mes abonnements</h1>
+      <a class="btn btn-primary" href="/subscriptions/add">+ Ajouter</a>
+    </div>
+
+    <% if (subscriptions.length === 0) { %>
+      <div class="alert alert-info">Aucun abonnement pour le moment. Ajoutez-en un pour commencer.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Prix</th>
+              <th>Cycle</th>
+              <th>Prochaine échéance</th>
+              <th>Catégorie</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% subscriptions.forEach(sub => { %>
+              <tr>
+                <td><%= sub.name %></td>
+                <td><%= sub.price.toFixed(2) %> <%= sub.currency %></td>
+                <td class="text-capitalize"><%= sub.billingCycle %></td>
+                <td><%= sub.nextPaymentDate.toISOString().slice(0,10) %></td>
+                <td><%= sub.category %></td>
+                <td class="text-end">
+                  <button class="btn btn-outline-secondary btn-sm me-2 generate-letter" data-name="<%= sub.name %>" data-price="<%= sub.price %>" data-currency="<%= sub.currency %>" data-cycle="<%= sub.billingCycle %>" data-next="<%= sub.nextPaymentDate.toISOString().slice(0,10) %>" data-category="<%= sub.category %>">Lettre</button>
+                  <form method="POST" action="/subscriptions/<%= sub._id %>/delete" class="d-inline">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Supprimer</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="modal fade" id="letterModal" tabindex="-1" aria-labelledby="letterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="letterModalLabel">Lettre de résiliation</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <pre id="letterContent" class="mb-0"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/cancellation.js"></script>
+</body>
+</html>
