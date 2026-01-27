@@ -5,11 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - SubTracker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    #calendar {
+      max-width: 900px;
+      margin: 20px auto 40px auto;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.05);
+      font-size: 0.85em;
+    }
+    .fc-event {
+      cursor: pointer;
+      border: none;
+    }
+    .fc-header-toolbar {
+      margin-bottom: 1em ;
+    }
+    .fc-toolbar-title {
+      font-size: 1.2em;
+    }
+  </style>
 </head>
 <body>
   <div class="container py-4">
     <%- include('partials/navbar') %>
+    
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h1 class="h4 mb-0">Mes abonnements</h1>
       <div>
@@ -17,6 +40,10 @@
         <a class="btn btn-primary" href="/subscriptions/add">+ Ajouter</a>
       </div>
     </div>
+
+    <% if (subscriptions.length > 0) { %>
+      <div id="calendar"></div>
+    <% } %>
 
     <% if (subscriptions.length === 0) { %>
       <div class="alert alert-info">Aucun abonnement pour le moment. Ajoutez-en un pour commencer ou connectez votre banque.</div>
@@ -36,7 +63,10 @@
           <tbody>
             <% subscriptions.forEach(sub => { %>
               <tr>
-                <td><%= sub.name %></td>
+                <td>
+                  <span class="badge rounded-pill me-1 category-badge" data-category="<%= sub.category %>">●</span>
+                  <%= sub.name %>
+                </td>
                 <td><%= sub.price.toFixed(2) %> <%= sub.currency %></td>
                 <td class="text-capitalize"><%= sub.billingCycle %></td>
                 <td><%= sub.nextPaymentDate.toISOString().slice(0,10) %></td>
@@ -55,7 +85,6 @@
                     data-bs-target="#editModal">
                     Modifier
                   </button>
-
                   <button class="btn btn-outline-secondary btn-sm me-2 generate-letter" data-name="<%= sub.name %>" data-price="<%= sub.price %>" data-currency="<%= sub.currency %>" data-cycle="<%= sub.billingCycle %>" data-next="<%= sub.nextPaymentDate.toISOString().slice(0,10) %>" data-category="<%= sub.category %>">Lettre</button>
                   <form method="POST" action="/subscriptions/<%= sub._id %>/delete" class="d-inline">
                     <button class="btn btn-outline-danger btn-sm" type="submit">Supprimer</button>
@@ -102,16 +131,26 @@
                 <option value="monthly">Mensuel</option>
                 <option value="yearly">Annuel</option>
                 <option value="weekly">Hebdomadaire</option>
+                <option value="quarterly">Trimestriel</option>
               </select>
             </div>
             <div class="mb-3">
               <label class="form-label">Prochaine échéance</label>
               <input type="date" class="form-control" name="nextPaymentDate" id="editNext" required>
             </div>
+            
             <div class="mb-3">
               <label class="form-label">Catégorie</label>
-              <input type="text" class="form-control" name="category" id="editCategory" required>
+              <select class="form-select" name="category" id="editCategory" required>
+                <option value="Divertissement">Divertissement (Vidéo, Streaming)</option>
+                <option value="Musique">Musique</option>
+                <option value="Professionnel">Professionnel / Travail</option>
+                <option value="Nourriture">Nourriture / Livraison</option>
+                <option value="Sport">Sport & Santé</option>
+                <option value="Autre">Autre</option>
+              </select>
             </div>
+
             <button type="submit" class="btn btn-primary w-100">Enregistrer les modifications</button>
           </form>
         </div>
@@ -138,72 +177,138 @@
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 
   <script>
-    const editBtns = document.querySelectorAll('.edit-subscription-btn');
-    const editForm = document.getElementById('editForm');
-    const editName = document.getElementById('editName');
-    const editPrice = document.getElementById('editPrice');
-    const editCurrency = document.getElementById('editCurrency');
-    const editCycle = document.getElementById('editCycle');
-    const editNext = document.getElementById('editNext');
-    const editCategory = document.getElementById('editCategory');
+    document.addEventListener('DOMContentLoaded', function() {
+      const calendarEl = document.getElementById('calendar');
+      
+      function getColorByCategory(category) {
+        if (!category) return '#858796';
+        const cat = category.toLowerCase();
+        
+        // BLEU : Divertissement, Streaming, Video
+        if (cat.includes('divertissement') || cat.includes('video') || cat.includes('stream') || cat.includes('netflix')) return '#3788d8';
+        
+        // VERT : Musique, Audio
+        if (cat.includes('music') || cat.includes('musique') || cat.includes('spotify')) return '#1cc88a';
+        
+        // BLEU FONCÉ : Pro, Travail
+        if (cat.includes('pro') || cat.includes('work') || cat.includes('travail') || cat.includes('cloud')) return '#4e73df';
+        
+        // JAUNE/ORANGE : Nourriture, Food
+        if (cat.includes('food') || cat.includes('nourriture') || cat.includes('uber') || cat.includes('repas')) return '#f6c23e';
+        
+        // ROUGE : Sport, Santé
+        if (cat.includes('sport') || cat.includes('gym') || cat.includes('fit') || cat.includes('santé')) return '#e74a3b';
+        
+        return '#858796'; 
+      }
 
-    editBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        const name = btn.getAttribute('data-name');
-        const price = btn.getAttribute('data-price');
-        const currency = btn.getAttribute('data-currency');
-        const cycle = btn.getAttribute('data-cycle');
-        const next = btn.getAttribute('data-next');
-        const category = btn.getAttribute('data-category');
+      if (calendarEl) {
+        const rawSubscriptions = <%- JSON.stringify(subscriptions) %>;
 
-        editName.value = name;
-        editPrice.value = price;
-        editCurrency.value = currency;
-        editCycle.value = cycle;
-        editNext.value = next;
-        editCategory.value = category;
+        let calendarEvents = [];
+        
+        rawSubscriptions.forEach(sub => {
+          let currentDate = new Date(sub.nextPaymentDate);
+          const cycle = sub.billingCycle;
+          const color = getColorByCategory(sub.category || sub.name);
 
-        editForm.action = `/subscriptions/${id}/update`;
+   
+          for (let i = 0; i < 12; i++) {
+            calendarEvents.push({
+              title: `${sub.name} (${sub.price} ${sub.currency})`,
+              start: currentDate.toISOString().split('T')[0],
+              backgroundColor: color,
+              borderColor: color,
+              allDay: true
+            });
+
+            if (cycle === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
+            else if (cycle === 'yearly') currentDate.setFullYear(currentDate.getFullYear() + 1);
+            else if (cycle === 'weekly') currentDate.setDate(currentDate.getDate() + 7);
+            else if (cycle === 'quarterly') currentDate.setMonth(currentDate.getMonth() + 3);
+            else break;
+          }
+        });
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          locale: 'fr',
+          aspectRatio: 1.5,
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth'
+          },
+          buttonText: {
+            today: "Aujourd'hui",
+            month: 'Mois',
+            list: 'Liste'
+          },
+          events: calendarEvents
+        });
+
+        calendar.render();
+      }
+
+      document.querySelectorAll('.category-badge').forEach(badge => {
+        const cat = badge.getAttribute('data-category');
+        badge.style.color = getColorByCategory(cat || '');
+      });
+      
+      const editBtns = document.querySelectorAll('.edit-subscription-btn');
+      const editForm = document.getElementById('editForm');
+      const editName = document.getElementById('editName');
+      const editPrice = document.getElementById('editPrice');
+      const editCurrency = document.getElementById('editCurrency');
+      const editCycle = document.getElementById('editCycle');
+      const editNext = document.getElementById('editNext');
+      const editCategory = document.getElementById('editCategory');
+
+      editBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          editName.value = btn.getAttribute('data-name');
+          editPrice.value = btn.getAttribute('data-price');
+          editCurrency.value = btn.getAttribute('data-currency');
+          editCycle.value = btn.getAttribute('data-cycle');
+          editNext.value = btn.getAttribute('data-next');
+        
+          const categoryValue = btn.getAttribute('data-category');
+          if (categoryValue) {
+             editCategory.value = categoryValue;
+          }
+          
+          editForm.action = `/subscriptions/${id}/update`;
+        });
       });
     });
   </script>
 
   <script>
     const connectBtn = document.getElementById('connect-bank-btn');
-    
     if (connectBtn) {
       connectBtn.addEventListener('click', async () => {
-      
         connectBtn.disabled = true;
         connectBtn.textContent = "Chargement...";
-
         try {
           const res = await fetch('/api/plaid/create_link_token', { method: 'POST' });
           const data = await res.json();
-
           const handler = Plaid.create({
             token: data.link_token,
             onSuccess: async (public_token, metadata) => {
-              console.log('Connexion réussie, échange du token...');
-              
-
               await fetch('/api/plaid/exchange_public_token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ public_token }),
               });
-              
               connectBtn.textContent = "Analyse en cours...";
-              
               const txRes = await fetch('/api/plaid/transactions');
               const txData = await txRes.json();
-              
               if (txData.success && txData.count > 0) {
-                alert(txData.count + " abonnements trouvés et ajoutés !");
+                alert(txData.count + " abonnements trouvés !");
                 window.location.reload();
               } else {
-                alert("Aucun nouvel abonnement détecté dans les 30 derniers jours.");
+                alert("Aucun nouvel abonnement détecté.");
                 connectBtn.textContent = "Connecter ma banque";
                 connectBtn.disabled = false;
               }
@@ -211,14 +316,12 @@
             onExit: (err, metadata) => {
               connectBtn.disabled = false;
               connectBtn.textContent = "Connecter ma banque";
-              if (err) console.error(err);
             },
           });
-
           handler.open();
         } catch (err) {
-          console.error("Erreur frontend:", err);
-          alert("Une erreur est survenue. Vérifiez la console.");
+          console.error("Erreur:", err);
+          alert("Erreur de connexion.");
           connectBtn.disabled = false;
           connectBtn.textContent = "Connecter ma banque";
         }

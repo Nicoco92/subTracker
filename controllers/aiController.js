@@ -1,12 +1,35 @@
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const useMock = !process.env.OPENAI_API_KEY;
-const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-let client = null;
+// --- CONFIGURATION ---
+const useMock = !process.env.GEMINI_API_KEY;
+let genAI = null;
+let model = null;
 
 if (!useMock) {
-  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  // Utilisez ici le modèle qui a fonctionné pour vous (ex: "gemini-1.5-flash" ou "gemini-pro")
+  model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
+
+// --- FONCTION UTILITAIRE DE NETTOYAGE ---
+// C'est le secret : cette fonction enlève les ```json et autres parasites
+function cleanJSON(text) {
+  if (!text) return "{}";
+  // Enlever les balises markdown ```json ... ```
+  let cleaned = text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+  // Trouver le premier { et le dernier }
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+  return cleaned;
+}
+
+// --- CONTROLEURS ---
 
 const autofill = async (req, res) => {
   const { name } = req.body;
@@ -15,30 +38,35 @@ const autofill = async (req, res) => {
   if (useMock) {
     return res.json({
       price: 9.99,
-      category: "Entertainment",
+      category: "Divertissement",
       cycle: "monthly",
       mock: true,
     });
   }
 
   try {
-    const completion = await client.chat.completions.create({
-      model,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "user",
-          content: `Estime le prix, la categorie et le cycle pour le service ${name}. Reponds en JSON pur : {"price": Number, "category": String, "cycle": String}.`,
-        },
-      ],
-    });
+    const prompt = `
+      Tu es une API JSON. Estime les détails de l'abonnement "${name}".
+      Réponds UNIQUEMENT avec ce JSON :
+      {"price": Number, "category": String, "billingCycle": String}
+      
+      Catégories possibles : ["Divertissement", "Musique", "Professionnel", "Nourriture", "Sport", "Autre"].
+      Cycles possibles : ["monthly", "yearly", "weekly"].
+      Exemple pour Netflix : {"price": 13.49, "category": "Divertissement", "billingCycle": "monthly"}
+    `;
 
-    const content = completion.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(content);
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+
+    // On nettoie avant de parser
+    const cleanedText = cleanJSON(responseText);
+    const parsed = JSON.parse(cleanedText);
+
     return res.json(parsed);
   } catch (err) {
-    console.error("AI autofill error", err.message);
-    return res.status(500).json({ error: "Autofill failed" });
+    console.error("Gemini autofill error:", err.message);
+    // En cas d'erreur, on renvoie des valeurs par défaut plutôt qu'une erreur 500
+    return res.json({ price: 0, category: "Autre", billingCycle: "monthly" });
   }
 };
 
@@ -49,26 +77,33 @@ const generateCancellation = async (req, res) => {
     return res.status(400).json({ error: "Missing subscription name" });
 
   if (useMock) {
-    const letter = `Objet: Resiliation de l'abonnement ${name}\n\nJe souhaite resiler mon abonnement ${name} (categorie: ${category || "N/A"}) facture ${price || "N/A"} ${currency || ""} sur un cycle ${billingCycle || "N/A"}. Merci de confirmer la prise en compte avant ${nextPaymentDate || "la prochaine echeance"}.\n\nCordialement,`;
-    return res.json({ letter, mock: true });
+    return res.json({
+      letter: "Mode simulation (pas de clé API).",
+      mock: true,
+    });
   }
 
   try {
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: `Redige une lettre formelle de resiliation pour l'abonnement suivant:\nNom: ${name}\nPrix: ${price || "inconnu"} ${currency || ""}\nCycle: ${billingCycle || "inconnu"}\nProchaine echeance: ${nextPaymentDate || "inconnue"}\nCategorie: ${category || "inconnue"}\n\nLe ton doit rester poli et concis.`,
-        },
-      ],
-    });
+    const prompt = `
+      Rédige une lettre de résiliation pour :
+      Service: ${name}
+      Catégorie: ${category}
+      Prix: ${price} ${currency}
+      Cycle: ${billingCycle}
+      Prochaine échéance: ${nextPaymentDate}
+      
+      La lettre doit être polie, formelle et demander l'arrêt des prélèvements.
+      Ne mets pas de politesses avant ou après le corps de la lettre (pas de "Voici la lettre").
+    `;
 
-    const letter = completion.choices[0]?.message?.content?.trim();
+    const result = await model.generateContent(prompt);
+    const letter = result.response.text();
+
+    // Pas besoin de JSON parse ici, c'est du texte brut
     return res.json({ letter });
   } catch (err) {
-    console.error("AI cancellation error", err.message);
-    return res.status(500).json({ error: "Generation failed" });
+    console.error("Gemini cancellation error:", err.message);
+    return res.status(500).json({ error: "Impossible de générer la lettre" });
   }
 };
 

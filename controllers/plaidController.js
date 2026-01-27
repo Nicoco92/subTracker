@@ -1,5 +1,7 @@
 const { Configuration, PlaidApi, PlaidEnvironments } = require("plaid");
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // Import Gemini
 const Subscription = require("../models/Subscription");
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const configuration = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV || "sandbox"],
@@ -10,8 +12,43 @@ const configuration = new Configuration({
     },
   },
 });
-
 const client = new PlaidApi(configuration);
+
+let genAI = null;
+let model = null;
+if (process.env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+}
+
+async function categorizeTransactionsWithAI(transactionNames) {
+  if (!transactionNames || transactionNames.length === 0 || !model) return {};
+
+  try {
+    const prompt = `
+      Tu es un assistant financier. Voici une liste de noms de transactions :
+      ${JSON.stringify(transactionNames)}
+
+      Pour chaque nom, attribue la catégorie la plus pertinente parmi cette liste exacte :
+      ["Divertissement", "Musique", "Professionnel", "Nourriture", "Sport", "Autre"].
+
+      Réponds UNIQUEMENT avec un objet JSON où :
+      - Clé = Nom de la transaction
+      - Valeur = Catégorie trouvée
+    `;
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" },
+    });
+
+    const responseText = result.response.text();
+    return JSON.parse(responseText);
+  } catch (err) {
+    console.error("Erreur Gemini catégorisation:", err.message);
+    return {};
+  }
+}
 
 const createLinkToken = async (req, res) => {
   try {
@@ -51,7 +88,6 @@ const exchangePublicToken = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 const syncTransactions = async (req, res) => {
   const accessToken = req.session.plaidAccessToken;
   if (!accessToken)
@@ -61,25 +97,59 @@ const syncTransactions = async (req, res) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const response = await client.transactionsGet({
-      access_token: accessToken,
-      start_date: thirtyDaysAgo.toISOString().split("T")[0],
-      end_date: now.toISOString().split("T")[0],
-    });
+    let transactions = [];
+    let retries = 5;
 
-    const transactions = response.data.transactions;
+    while (retries > 0) {
+      try {
+        const response = await client.transactionsGet({
+          access_token: accessToken,
+          start_date: thirtyDaysAgo.toISOString().split("T")[0],
+          end_date: now.toISOString().split("T")[0],
+        });
 
-    const newSubscriptions = transactions
-      .filter((tx) => tx.amount > 0)
-      .map((tx) => ({
+        transactions = response.data.transactions;
+        break;
+      } catch (err) {
+        const errorCode = err.response?.data?.error_code;
+
+        if (errorCode === "PRODUCT_NOT_READY") {
+          console.log(
+            `Plaid n'est pas prêt. Tentative restante : ${retries}. Attente 2s...`,
+          );
+          retries--;
+          await sleep(2000);
+          continue;
+        }
+
+        throw err;
+      }
+    }
+
+    if (retries === 0) {
+      return res.status(202).json({
+        error:
+          "Les transactions sont en cours de traitement. Réessayez dans une minute.",
+      });
+    }
+
+    const expenses = transactions.filter((tx) => tx.amount > 0);
+    const transactionNames = expenses.map((tx) => tx.merchant_name || tx.name);
+
+    const categorizedMap = await categorizeTransactionsWithAI(transactionNames);
+
+    const newSubscriptions = expenses.map((tx) => {
+      const name = tx.merchant_name || tx.name;
+      return {
         user: req.user._id,
-        name: tx.merchant_name || tx.name,
+        name: name,
         price: tx.amount,
         currency: tx.iso_currency_code || "USD",
         billingCycle: "monthly",
         nextPaymentDate: new Date(),
-        category: tx.category && tx.category[0] ? tx.category[0] : "Autre",
-      }));
+        category: categorizedMap[name] || "Autre",
+      };
+    });
 
     if (newSubscriptions.length > 0) {
       await Subscription.insertMany(newSubscriptions);
