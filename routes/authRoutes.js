@@ -1,7 +1,7 @@
 const express = require("express");
 const {
-  renderLogin,
-  renderRegister,
+  getLoginForm,
+  getRegisterForm,
   register,
   login,
   logout,
@@ -9,10 +9,10 @@ const {
 
 const router = express.Router();
 
-router.get("/login", renderLogin);
-router.get("/register", renderRegister);
+router.get("/login", getLoginForm);
+router.get("/register", getRegisterForm);
 router.post("/register", register);
 router.post("/login", login);
-router.post("/logout", logout);
+router.get("/logout", logout);
 
 module.exports = router;

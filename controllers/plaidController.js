@@ -1,5 +1,5 @@
 const { Configuration, PlaidApi, PlaidEnvironments } = require("plaid");
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // Import Gemini
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Subscription = require("../models/Subscription");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

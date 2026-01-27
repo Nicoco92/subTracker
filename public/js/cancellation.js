@@ -1,39 +1,54 @@
-(() => {
-  const modalElement = document.getElementById("letterModal");
+document.addEventListener("DOMContentLoaded", () => {
+  const generateBtns = document.querySelectorAll(".generate-letter");
+  const letterModalEl = document.getElementById("letterModal");
+  const letterModal = new bootstrap.Modal(letterModalEl);
   const letterContent = document.getElementById("letterContent");
-  const triggerButtons = document.querySelectorAll(".generate-letter");
-  const modal = modalElement ? new bootstrap.Modal(modalElement) : null;
 
-  const handleClick = async (evt) => {
-    const btn = evt.currentTarget;
-    const payload = {
-      name: btn.dataset.name,
-      price: Number(btn.dataset.price),
-      currency: btn.dataset.currency,
-      billingCycle: btn.dataset.cycle,
-      nextPaymentDate: btn.dataset.next,
-      category: btn.dataset.category,
-    };
+  const loadingModalEl = document.getElementById("loadingModal");
+  const loadingModal = new bootstrap.Modal(loadingModalEl);
 
-    try {
-      const res = await fetch("/api/ai/generate-cancellation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation error");
-      if (letterContent) {
-        letterContent.textContent = data.letter || "Lettre non disponible.";
+  generateBtns.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const name = btn.getAttribute("data-name");
+      const price = btn.getAttribute("data-price");
+      const currency = btn.getAttribute("data-currency");
+      const billingCycle = btn.getAttribute("data-cycle");
+      const nextPaymentDate = btn.getAttribute("data-next");
+      const category = btn.getAttribute("data-category");
+
+      loadingModal.show();
+
+      try {
+        const response = await fetch("/api/ai/generate-cancellation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            price,
+            currency,
+            billingCycle,
+            nextPaymentDate,
+            category,
+          }),
+        });
+
+        const data = await response.json();
+
+        setTimeout(() => {
+          loadingModal.hide();
+
+          if (data.letter) {
+            letterContent.textContent = data.letter;
+            letterModal.show();
+          } else {
+            alert("Erreur lors de la génération de la lettre.");
+          }
+        }, 500);
+      } catch (error) {
+        loadingModal.hide();
+        console.error("Erreur:", error);
+        alert("Impossible de contacter l'IA.");
       }
-      if (modal) modal.show();
-    } catch (err) {
-      if (letterContent)
-        letterContent.textContent = "Generation impossible pour le moment.";
-      if (modal) modal.show();
-      console.error(err);
-    }
-  };
-
-  triggerButtons.forEach((btn) => btn.addEventListener("click", handleClick));
-})();
+    });
+  });
+});

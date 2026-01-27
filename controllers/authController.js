@@ -1,59 +1,49 @@
-const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 
-const renderLogin = (req, res) => {
-  if (req.user) return res.redirect("/subscriptions");
-  res.render("auth/login", { error: null });
-};
-
-const renderRegister = (req, res) => {
-  if (req.user) return res.redirect("/subscriptions");
-  res.render("auth/register", { error: null });
-};
-
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { username, email, password } = req.body;
+
   try {
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res
-        .status(400)
-        .render("auth/register", { error: "Email already in use." });
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.render("auth/register", {
+        error: "Cet email est déjà utilisé",
+      });
     }
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed });
+
+    user = await User.create({ username, email, password });
+
     req.session.userId = user._id;
     res.redirect("/subscriptions");
   } catch (err) {
-    console.error("Register error", err.message);
-    res
-      .status(500)
-      .render("auth/register", { error: "Unable to register. Try again." });
+    console.error(err);
+    res.render("auth/register", { error: "Erreur lors de l'inscription" });
   }
 };
 
 const login = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res
-        .status(400)
-        .render("auth/login", { error: "Invalid credentials." });
+      return res.render("auth/login", {
+        error: "Email ou mot de passe incorrect",
+      });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res
-        .status(400)
-        .render("auth/login", { error: "Invalid credentials." });
+      return res.render("auth/login", {
+        error: "Email ou mot de passe incorrect",
+      });
     }
+
     req.session.userId = user._id;
     res.redirect("/subscriptions");
   } catch (err) {
-    console.error("Login error", err.message);
-    res
-      .status(500)
-      .render("auth/login", { error: "Unable to login. Try again." });
+    console.error(err);
+    res.render("auth/login", { error: "Erreur lors de la connexion" });
   }
 };
 
@@ -63,4 +53,14 @@ const logout = (req, res) => {
   });
 };
 
-module.exports = { renderLogin, renderRegister, register, login, logout };
+const getLoginForm = (req, res) => res.render("auth/login", { error: null });
+const getRegisterForm = (req, res) =>
+  res.render("auth/register", { error: null });
+
+module.exports = {
+  register,
+  login,
+  logout,
+  getLoginForm,
+  getRegisterForm,
+};
