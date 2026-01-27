@@ -32,11 +32,9 @@ const createSubscription = async (req, res) => {
     res.redirect("/subscriptions");
   } catch (err) {
     console.error("Create subscription error", err.message);
-    res
-      .status(400)
-      .render("add", {
-        error: "Unable to create subscription. Check your fields.",
-      });
+    res.status(400).render("add", {
+      error: "Unable to create subscription. Check your fields.",
+    });
   }
 };
 
@@ -51,9 +49,35 @@ const deleteSubscription = async (req, res) => {
   }
 };
 
+const updateSubscription = async (req, res) => {
+  const { id } = req.params;
+  const { name, price, currency, billingCycle, nextPaymentDate, category } =
+    req.body;
+
+  try {
+    await Subscription.findOneAndUpdate(
+      { _id: id, user: req.user._id },
+      {
+        name,
+        price: Number(price),
+        currency,
+        billingCycle,
+        nextPaymentDate,
+        category,
+      },
+      { new: true, runValidators: true },
+    );
+    res.redirect("/subscriptions");
+  } catch (err) {
+    console.error("Update subscription error", err.message);
+    res.status(500).send("Impossible de modifier l'abonnement");
+  }
+};
+
 module.exports = {
   getDashboard,
   getAddForm,
   createSubscription,
   deleteSubscription,
+  updateSubscription,
 };

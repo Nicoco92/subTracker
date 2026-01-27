@@ -11,6 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const subRoutes = require("./routes/subRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const { attachUser } = require("./middleware/auth");
+const plaidRoutes = require("./routes/plaidRoutes");
 
 connectDB();
 
@@ -47,7 +48,7 @@ app.use((req, res, next) => {
 app.use("/auth", authRoutes);
 app.use("/subscriptions", subRoutes);
 app.use("/api/ai", aiRoutes);
-
+app.use("/api/plaid", plaidRoutes);
 app.get("/", (req, res) => {
   res.redirect("/subscriptions");
 });
