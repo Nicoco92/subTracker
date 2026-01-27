@@ -15,7 +15,8 @@
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "mongoose": "^7.7.0",
-    "openai": "^4.52.0"
+    "openai": "^4.52.0",
+    "plaid": "^41.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
