@@ -1,26 +1,20 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// --- CONFIGURATION ---
 const useMock = !process.env.GEMINI_API_KEY;
 let genAI = null;
 let model = null;
 
 if (!useMock) {
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  // Utilisez ici le modèle qui a fonctionné pour vous (ex: "gemini-1.5-flash" ou "gemini-pro")
   model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
-// --- FONCTION UTILITAIRE DE NETTOYAGE ---
-// C'est le secret : cette fonction enlève les ```json et autres parasites
 function cleanJSON(text) {
   if (!text) return "{}";
-  // Enlever les balises markdown ```json ... ```
   let cleaned = text
     .replace(/```json/g, "")
     .replace(/```/g, "")
     .trim();
-  // Trouver le premier { et le dernier }
   const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace !== -1) {
@@ -28,8 +22,6 @@ function cleanJSON(text) {
   }
   return cleaned;
 }
-
-// --- CONTROLEURS ---
 
 const autofill = async (req, res) => {
   const { name } = req.body;
@@ -58,14 +50,12 @@ const autofill = async (req, res) => {
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    // On nettoie avant de parser
     const cleanedText = cleanJSON(responseText);
     const parsed = JSON.parse(cleanedText);
 
     return res.json(parsed);
   } catch (err) {
     console.error("Gemini autofill error:", err.message);
-    // En cas d'erreur, on renvoie des valeurs par défaut plutôt qu'une erreur 500
     return res.json({ price: 0, category: "Autre", billingCycle: "monthly" });
   }
 };
@@ -99,7 +89,6 @@ const generateCancellation = async (req, res) => {
     const result = await model.generateContent(prompt);
     const letter = result.response.text();
 
-    // Pas besoin de JSON parse ici, c'est du texte brut
     return res.json({ letter });
   } catch (err) {
     console.error("Gemini cancellation error:", err.message);
