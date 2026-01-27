@@ -1,73 +1,147 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ajouter un abonnement - SubTracker</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-  <div class="container py-4">
-    <%- include('partials/navbar') %>
-    <div class="row">
-      <div class="col-lg-8 mx-auto">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h1 class="h4 mb-3">Ajouter un abonnement</h1>
-            <% if (error) { %>
-              <div class="alert alert-danger"><%= error %></div>
-            <% } %>
-            <form method="POST" action="/subscriptions/add" id="add-form">
-              <div class="mb-3">
-                <label for="name" class="form-label">Nom du service</label>
-                <input type="text" class="form-control" id="name" name="name" required>
-                <div id="autofill-hint" class="form-text">L'auto-fill IA tente de pre-remplir le prix, la catégorie et le cycle.</div>
-              </div>
-              <div class="row">
-                <div class="col-md-4 mb-3">
-                  <label for="price" class="form-label">Prix</label>
-                  <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ajouter un abonnement - SubTracker</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="container py-4">
+      <%- include('partials/navbar') %>
+
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-sm">
+            <div class="card-body p-4">
+              <h1 class="h3 mb-4 text-center">Nouvel abonnement</h1>
+
+              <form action="/subscriptions/add" method="POST">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Nom du service</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    name="name"
+                    placeholder="ex: Netflix, Salle de sport..."
+                    required
+                  />
+                  <div
+                    id="ai-loading"
+                    class="form-text text-primary"
+                    style="display: none"
+                  >
+                    <span
+                      class="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Recherche des infos...
+                  </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <label for="currency" class="form-label">Devise</label>
-                  <select class="form-select" id="currency" name="currency">
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="CAD">CAD</option>
-                  </select>
+
+                <div class="row mb-3">
+                  <div class="col">
+                    <label for="price" class="form-label">Prix</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      class="form-control"
+                      id="price"
+                      name="price"
+                      required
+                    />
+                  </div>
+                  <div class="col">
+                    <label for="currency" class="form-label">Devise</label>
+                    <select class="form-select" id="currency" name="currency">
+                      <option value="EUR" selected>EUR (€)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <label for="billingCycle" class="form-label">Cycle</label>
-                  <select class="form-select" id="billingCycle" name="billingCycle" required>
-                    <option value="monthly">Mensuel</option>
+
+                <div class="mb-3">
+                  <label for="billingCycle" class="form-label"
+                    >Fréquence de paiement</label
+                  >
+                  <select
+                    class="form-select"
+                    id="billingCycle"
+                    name="billingCycle"
+                  >
+                    <option value="monthly" selected>Mensuel</option>
+                    <option value="yearly">Annuel</option>
                     <option value="weekly">Hebdomadaire</option>
                     <option value="quarterly">Trimestriel</option>
-                    <option value="yearly">Annuel</option>
-                    <option value="once">Ponctuel</option>
                   </select>
                 </div>
-              </div>
-              <div class="mb-3">
-                <label for="nextPaymentDate" class="form-label">Prochaine échéance</label>
-                <input type="date" class="form-control" id="nextPaymentDate" name="nextPaymentDate" required>
-              </div>
-              <div class="mb-3">
-                <label for="category" class="form-label">Catégorie</label>
-                <input type="text" class="form-control" id="category" name="category" required>
-              </div>
-              <div class="d-flex justify-content-between">
-                <a class="btn btn-outline-secondary" href="/subscriptions">Annuler</a>
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
-              </div>
-            </form>
+
+                <div class="mb-3">
+                  <label for="nextPaymentDate" class="form-label"
+                    >Prochaine échéance</label
+                  >
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="nextPaymentDate"
+                    name="nextPaymentDate"
+                    required
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label for="category" class="form-label">Catégorie</label>
+                  <select
+                    class="form-select"
+                    id="category"
+                    name="category"
+                    required
+                  >
+                    <option value="" disabled selected>
+                      Choisir une catégorie...
+                    </option>
+                    <option value="Divertissement">Divertissement</option>
+                    <option value="Musique">Musique</option>
+                    <option value="Professionnel">Professionnel</option>
+                    <option value="Nourriture">Nourriture</option>
+                    <option value="Sport">Sport</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    Ajouter
+                  </button>
+                  <a href="/subscriptions" class="btn btn-outline-secondary"
+                    >Annuler</a
+                  >
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/autofill.js"></script>
-</body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="/js/autofill.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("nextPaymentDate");
+        if (dateInput && !dateInput.value) {
+          dateInput.valueAsDate = new Date();
+        }
+      });
+    </script>
+  </body>
 </html>
