@@ -191,11 +191,25 @@ const syncTransactions = async (req, res) => {
       };
     });
 
-    if (newSubscriptions.length > 0) {
-      await Subscription.insertMany(newSubscriptions);
+    const filteredNewSubscriptions = [];
+    for (const sub of newSubscriptions) {
+      const exists = await Subscription.findOne({
+        user: sub.user,
+        name: sub.name,
+        price: sub.price,
+        currency: sub.currency,
+        nextPaymentDate: sub.nextPaymentDate,
+      });
+      if (!exists) {
+        filteredNewSubscriptions.push(sub);
+      }
     }
 
-    res.json({ success: true, count: newSubscriptions.length });
+    if (filteredNewSubscriptions.length > 0) {
+      await Subscription.insertMany(filteredNewSubscriptions);
+    }
+
+    res.json({ success: true, count: filteredNewSubscriptions.length });
   } catch (error) {
     console.error(
       "Erreur syncTransactions:",
