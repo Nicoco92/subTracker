@@ -3,6 +3,7 @@
 SubTracker est un petit service permettant de **centraliser et suivre vos abonnements** :  
 tableau de bord, calendrier des paiements, export des échéances, synchronisation bancaire et génération de lettres de résiliation assistée par **IA**.
 
+Réaliser par : Johary RAKOTONIRINA, Nicolas CONTRERAS TIBOCHA et Maxime YE
 ---
 
 ##  Présentation
