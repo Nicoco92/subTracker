@@ -12,6 +12,7 @@ const subRoutes = require("./routes/subRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const { attachUser } = require("./middleware/auth");
 const plaidRoutes = require("./routes/plaidRoutes");
+const initNotificationService = require("./services/notificationService");
 
 connectDB();
 
@@ -59,6 +60,8 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   res.status(500).send("Internal Server Error");
 });
+
+initNotificationService();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

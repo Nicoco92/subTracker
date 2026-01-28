@@ -8,7 +8,6 @@
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Style pour le calendrier */
     #calendar {
       max-width: 900px;
       margin: 20px auto 40px auto;
@@ -224,8 +223,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // (Le code du calendrier et des boutons edit reste identique au précédent, 
-      //  je ne le remets pas pour raccourcir mais il est inclus dans le fichier final)
       const calendarEl = document.getElementById('calendar');
       
       function getColorByCategory(category) {
@@ -273,13 +270,11 @@
         calendar.render();
       }
 
-      // Appliquer les couleurs aux badges
       document.querySelectorAll('.category-badge').forEach(badge => {
         const cat = badge.getAttribute('data-category');
         badge.style.color = getColorByCategory(cat || '');
       });
 
-      // Gestion boutons Edit
       const editBtns = document.querySelectorAll('.edit-subscription-btn');
       const editForm = document.getElementById('editForm');
       const editName = document.getElementById('editName');
@@ -343,7 +338,6 @@
               const txData = await txRes.json();
               
               if (txData.success && txData.count > 0) {
-                document.getElementById('plaidSuccessTitle').textContent = 'Connexion réussie !';
                 document.getElementById('plaidSuccessMessage').textContent = 
                   `${txData.count} abonnements ont été détectés et ajoutés à votre tableau de bord.`;
                 new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
