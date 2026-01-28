@@ -12,7 +12,7 @@
       max-width: 900px;
       margin: 20px auto 40px auto;
       padding: 15px;
-      background: white;
+      background: var(--bg-card, white);
       border-radius: 10px;
       box-shadow: 0 0 15px rgba(0,0,0,0.05);
       font-size: 0.85em;
@@ -57,7 +57,11 @@
     </div>
 
     <% if (subscriptions.length > 0) { %>
-      <div id="calendar"></div>
+      <div class="card mb-4">
+        <div class="card-body">
+          <div id="calendar"></div>
+        </div>
+      </div>
     <% } %>
 
     <% if (subscriptions.length === 0) { %>

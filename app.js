@@ -51,6 +51,7 @@ app.use("/subscriptions", subRoutes);
 app.use("/dashboard", subRoutes); 
 app.use("/api/ai", aiRoutes);
 app.use("/api/plaid", plaidRoutes);
+app.use("/api/user", require("./routes/authRoutes"));
 app.get("/", (req, res) => {
   res.redirect("/subscriptions");
 });
