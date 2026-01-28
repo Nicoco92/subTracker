@@ -9,6 +9,30 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <% if (locals.currentUser) { %>
+          <li class="nav-item me-2">
+            <div class="theme-dropdown">
+              <button class="theme-toggle" title="Changer le thème">
+                <span class="icon">☀️</span>
+              </button>
+              <div class="theme-dropdown-menu">
+                <button class="theme-option" data-theme="light">
+                  <span>☀️</span>
+                  <span>Clair</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="theme-option" data-theme="dark">
+                  <span>🌙</span>
+                  <span>Sombre</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="theme-option" data-theme="auto">
+                  <span>🌓</span>
+                  <span>Auto</span>
+                  <span class="check">✓</span>
+                </button>
+              </div>
+            </div>
+          </li>
           <li class="nav-item">
             <span class="nav-link text-muted fw-bold">Bonjour, <%= currentUser.username %></span>
           </li>
@@ -20,18 +44,12 @@
               Déconnexion
             </button>
           </li>
-        <% } else { %>
-          <li class="nav-item">
-            <a class="nav-link" href="/auth/login">Connexion</a>
-          </li>
-          <li class="nav-item ms-2">
-            <a class="btn btn-primary btn-sm" href="/auth/register">Inscription</a>
-          </li>
         <% } %>
       </ul>
     </div>
   </div>
 </nav>
+<script src="/js/theme.js"></script>
 
 <% if (locals.currentUser) { %>
 <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">

@@ -26,6 +26,11 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  themePreference: {
+    type: String,
+    enum: ["light", "dark", "auto"],
+    default: "auto",
+  }
 });
 
 UserSchema.pre("save", async function (next) {
