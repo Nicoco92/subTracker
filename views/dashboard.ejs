@@ -359,9 +359,11 @@
                   `${txData.count} abonnements ont été détectés et ajoutés à votre tableau de bord.`;
                 new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
               } else {
-                alert("Aucun abonnement détecté.");
-                connectBtn.textContent = "Connecter ma banque";
-                connectBtn.disabled = false;
+                  document.getElementById('plaidSuccessTitle').textContent = 'Aucun abonnement détecté';
+                  document.getElementById('plaidSuccessMessage').textContent = 'Aucun abonnement détecté.';
+                  new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
+                  connectBtn.textContent = "Connecter ma banque";
+                  connectBtn.disabled = false;
               }
             },
             onExit: (err, metadata) => {
