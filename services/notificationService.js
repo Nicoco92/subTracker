@@ -2,6 +2,8 @@ const cron = require("node-cron");
 const nodemailer = require("nodemailer");
 const Subscription = require("../models/Subscription");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -17,6 +19,7 @@ const sendReminderEmail = async (
   price,
   currency,
   daysLeft,
+  dueDate,
 ) => {
   const mailOptions = {
     from: `"SubTracker" <${process.env.EMAIL_USER}>`,
@@ -29,7 +32,7 @@ const sendReminderEmail = async (
         
         <div style="background-color: #f8f9fc; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p style="margin: 0;"><strong>Montant :</strong> ${price} ${currency}</p>
-          <p style="margin: 0;"><strong>Date prévue :</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
+          <p style="margin: 0;"><strong>Date prévue :</strong> ${new Date(dueDate).toLocaleDateString("fr-FR")}</p>
         </div>
         
         <p style="font-size: 0.9em; color: #666;">Ce message vous a été envoyé automatiquement à l'adresse ${recipientEmail}.</p>
@@ -47,7 +50,7 @@ const sendReminderEmail = async (
 
 const initNotificationService = () => {
   cron.schedule("0 9 * * *", async () => {
-    console.log("--- Vérification des échéances ---");
+    console.log("---  Démarrage de la vérification des échéances ---");
 
     try {
       const today = new Date();
@@ -61,7 +64,14 @@ const initNotificationService = () => {
         nextPaymentDate: { $gte: startOfDay, $lte: endOfDay },
       }).populate("user");
 
-      if (subscriptionsDue.length === 0) return;
+      if (subscriptionsDue.length === 0) {
+        console.log("Ø Aucun abonnement à échéance dans 3 jours.");
+        return;
+      }
+
+      console.log(
+        ` ${subscriptionsDue.length} abonnement(s) trouvé(s). Envoi en cours...`,
+      );
 
       for (const sub of subscriptionsDue) {
         if (sub.user && sub.user.email) {
@@ -72,15 +82,25 @@ const initNotificationService = () => {
             sub.price,
             sub.currency,
             3,
+            sub.nextPaymentDate,
+          );
+
+          await sleep(2000);
+        } else {
+          console.warn(
+            ` Abonnement "${sub.name}" ignoré : Utilisateur ou email manquant.`,
           );
         }
       }
+      console.log("---  Fin de la session d'envoi ---");
     } catch (error) {
-      console.error("Erreur service notification:", error);
+      console.error(" Erreur critique service notification:", error);
     }
   });
 
-  console.log("Service de notification activé.");
+  console.log(
+    "Service de notification activé (Vérification quotidienne à 09h00).",
+  );
 };
 
 module.exports = initNotificationService;
