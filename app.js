@@ -47,6 +47,7 @@ app.use((req, res, next) => {
 
 app.use("/auth", authRoutes);
 app.use("/subscriptions", subRoutes);
+app.use("/dashboard", subRoutes); 
 app.use("/api/ai", aiRoutes);
 app.use("/api/plaid", plaidRoutes);
 app.get("/", (req, res) => {
