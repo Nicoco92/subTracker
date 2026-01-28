@@ -1,7 +1,19 @@
 const { Configuration, PlaidApi, PlaidEnvironments } = require("plaid");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Subscription = require("../models/Subscription");
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function calculateNextPaymentDate(lastTransactionDateStr) {
+  const lastDate = new Date(lastTransactionDateStr);
+  const today = new Date();
+  let nextDate = new Date(lastDate);
+
+  while (nextDate <= today) {
+    nextDate.setMonth(nextDate.getMonth() + 1);
+  }
+  return nextDate;
+}
 
 const configuration = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV || "sandbox"],
@@ -43,7 +55,11 @@ async function categorizeTransactionsWithAI(transactionNames) {
     });
 
     const responseText = result.response.text();
-    return JSON.parse(responseText);
+    const cleanedText = responseText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    return JSON.parse(cleanedText);
   } catch (err) {
     console.error("Erreur Gemini catégorisation:", err.message);
     return {};
@@ -72,13 +88,8 @@ const createLinkToken = async (req, res) => {
 const exchangePublicToken = async (req, res) => {
   const { public_token } = req.body;
   try {
-    const response = await client.itemPublicTokenExchange({
-      public_token,
-    });
-    const accessToken = response.data.access_token;
-
-    req.session.plaidAccessToken = accessToken;
-
+    const response = await client.itemPublicTokenExchange({ public_token });
+    req.session.plaidAccessToken = response.data.access_token;
     res.json({ success: true });
   } catch (error) {
     console.error(
@@ -88,6 +99,7 @@ const exchangePublicToken = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const syncTransactions = async (req, res) => {
   const accessToken = req.session.plaidAccessToken;
   if (!accessToken)
@@ -95,7 +107,7 @@ const syncTransactions = async (req, res) => {
 
   try {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const lookbackDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
     let transactions = [];
     let retries = 5;
@@ -104,50 +116,70 @@ const syncTransactions = async (req, res) => {
       try {
         const response = await client.transactionsGet({
           access_token: accessToken,
-          start_date: thirtyDaysAgo.toISOString().split("T")[0],
+          start_date: lookbackDate.toISOString().split("T")[0],
           end_date: now.toISOString().split("T")[0],
         });
-
         transactions = response.data.transactions;
         break;
       } catch (err) {
         const errorCode = err.response?.data?.error_code;
-
         if (errorCode === "PRODUCT_NOT_READY") {
-          console.log(
-            `Plaid n'est pas prêt. Tentative restante : ${retries}. Attente 2s...`,
-          );
+          console.log(`Plaid n'est pas prêt. Attente... (${retries})`);
           retries--;
           await sleep(2000);
           continue;
         }
-
         throw err;
       }
     }
 
     if (retries === 0) {
       return res.status(202).json({
-        error:
-          "Les transactions sont en cours de traitement. Réessayez dans une minute.",
+        error: "Transactions en cours de traitement. Réessayez plus tard.",
       });
     }
 
-    const expenses = transactions.filter((tx) => tx.amount > 0);
-    const transactionNames = expenses.map((tx) => tx.merchant_name || tx.name);
+    const groupedTransactions = {};
+    transactions.forEach((tx) => {
+      if (tx.amount <= 0) return;
+      const name = (tx.merchant_name || tx.name).trim();
+      if (!groupedTransactions[name]) {
+        groupedTransactions[name] = [];
+      }
+      groupedTransactions[name].push(tx);
+    });
 
-    const categorizedMap = await categorizeTransactionsWithAI(transactionNames);
+    const potentialSubscriptions = [];
 
-    const newSubscriptions = expenses.map((tx) => {
-      const name = tx.merchant_name || tx.name;
+    for (const [name, txList] of Object.entries(groupedTransactions)) {
+      if (txList.length >= 1) {
+        txList.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const latestTx = txList[0];
+
+        const calculatedNextDate = calculateNextPaymentDate(latestTx.date);
+
+        potentialSubscriptions.push({
+          originalName: name,
+          amount: latestTx.amount,
+          currency: latestTx.iso_currency_code || "USD",
+          nextDate: calculatedNextDate,
+        });
+      }
+    }
+
+    const namesToCategorize = potentialSubscriptions.map((s) => s.originalName);
+    const categorizedMap =
+      await categorizeTransactionsWithAI(namesToCategorize);
+
+    const newSubscriptions = potentialSubscriptions.map((sub) => {
       return {
         user: req.user._id,
-        name: name,
-        price: tx.amount,
-        currency: tx.iso_currency_code || "USD",
+        name: sub.originalName,
+        price: sub.amount,
+        currency: sub.currency,
         billingCycle: "monthly",
-        nextPaymentDate: new Date(),
-        category: categorizedMap[name] || "Autre",
+        nextPaymentDate: sub.nextDate,
+        category: categorizedMap[sub.originalName] || "Autre",
       };
     });
 
