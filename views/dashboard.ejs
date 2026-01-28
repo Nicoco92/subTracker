@@ -34,15 +34,24 @@
     <%- include('partials/navbar') %>
     
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="h4 mb-0">Mes abonnements</h1>
+      <div class="d-flex align-items-center gap-3">
+        <h1 class="h4 mb-0">Mes abonnements</h1>
+        <% if (subscriptions.length > 0) { %>
+          <a href="/subscriptions/calendar/download" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" title="Exporter vers mon calendrier">
+            <span>📅</span> <span class="d-none d-sm-inline">Exporter .ics</span>
+          </a>
+        <% } %>
+      </div>
+
       <div>
-        <% if (plaidConnected) { %>
+        <% if (typeof plaidConnected !== 'undefined' && plaidConnected) { %>
           <button id="refresh-bank-btn" class="btn btn-outline-primary me-2">
             Actualiser les abonnements
           </button>
         <% } else { %>
           <button id="connect-bank-btn" class="btn btn-connect-bank me-2">Connecter ma banque</button>
         <% } %>
+        
         <a class="btn btn-primary" href="/subscriptions/add">+ Ajouter</a>
       </div>
     </div>
@@ -196,7 +205,6 @@
     </div>
   </div>
 
-  <!-- Modal de confirmation de suppression -->
   <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -223,6 +231,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // CALENDRIER
       const calendarEl = document.getElementById('calendar');
       
       function getColorByCategory(category) {
@@ -270,11 +279,13 @@
         calendar.render();
       }
 
+      // BADGES COULEURS
       document.querySelectorAll('.category-badge').forEach(badge => {
         const cat = badge.getAttribute('data-category');
         badge.style.color = getColorByCategory(cat || '');
       });
 
+      // EDIT MODAL
       const editBtns = document.querySelectorAll('.edit-subscription-btn');
       const editForm = document.getElementById('editForm');
       const editName = document.getElementById('editName');
@@ -298,7 +309,7 @@
         });
       });
 
-      // Gestion boutons Delete
+      // DELETE MODAL
       const deleteBtns = document.querySelectorAll('.delete-subscription-btn');
       const deleteForm = document.getElementById('deleteForm');
       const deleteSubName = document.getElementById('deleteSubName');
@@ -315,7 +326,9 @@
   </script>
 
   <script>
-    // Bouton Connecter ma banque
+    // LOGIQUE PLAID (Connecter / Actualiser)
+    
+    // 1. Bouton CONNECTER
     const connectBtn = document.getElementById('connect-bank-btn');
     if (connectBtn) {
       connectBtn.addEventListener('click', async () => {
@@ -362,7 +375,7 @@
       });
     }
 
-    // Bouton Actualiser les abonnements
+    // 2. Bouton ACTUALISER
     const refreshBtn = document.getElementById('refresh-bank-btn');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
@@ -385,13 +398,13 @@
           } else if (txData.error) {
             alert("Erreur: " + txData.error);
             refreshBtn.disabled = false;
-            refreshBtn.innerHTML = '🔄 Actualiser les abonnements';
+            refreshBtn.innerHTML = 'Actualiser les abonnements';
           }
         } catch (err) {
           console.error("Erreur:", err);
           alert("Erreur lors de l'actualisation.");
           refreshBtn.disabled = false;
-          refreshBtn.innerHTML = '🔄 Actualiser les abonnements';
+          refreshBtn.innerHTML = 'Actualiser les abonnements';
         }
       });
     }
