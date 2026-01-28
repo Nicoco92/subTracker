@@ -7,29 +7,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingModalEl = document.getElementById("loadingModal");
   const loadingModal = new bootstrap.Modal(loadingModalEl);
 
+  const confirmLetterModalEl = document.getElementById("confirmLetterModal");
+  const confirmLetterModal = new bootstrap.Modal(confirmLetterModalEl);
+  const confirmLetterSubName = document.getElementById("confirmLetterSubName");
+  const confirmGenerateLetterBtn = document.getElementById("confirmGenerateLetterBtn");
+
+  let pendingLetterData = null;
+
   generateBtns.forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const name = btn.getAttribute("data-name");
-      const price = btn.getAttribute("data-price");
-      const currency = btn.getAttribute("data-currency");
-      const billingCycle = btn.getAttribute("data-cycle");
-      const nextPaymentDate = btn.getAttribute("data-next");
-      const category = btn.getAttribute("data-category");
+      pendingLetterData = {
+        name: btn.getAttribute("data-name"),
+        price: btn.getAttribute("data-price"),
+        currency: btn.getAttribute("data-currency"),
+        billingCycle: btn.getAttribute("data-cycle"),
+        nextPaymentDate: btn.getAttribute("data-next"),
+        category: btn.getAttribute("data-category"),
+      };
+      confirmLetterSubName.textContent = pendingLetterData.name;
+      confirmLetterModal.show();
+    });
+  });
 
+  if (confirmGenerateLetterBtn) {
+    confirmGenerateLetterBtn.addEventListener("click", async () => {
+      confirmLetterModal.hide();
+      if (!pendingLetterData) return;
       loadingModal.show();
 
       try {
         const response = await fetch("/api/ai/generate-cancellation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            price,
-            currency,
-            billingCycle,
-            nextPaymentDate,
-            category,
-          }),
+          body: JSON.stringify(pendingLetterData),
         });
 
         const data = await response.json();
@@ -50,5 +60,5 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Impossible de contacter l'IA.");
       }
     });
-  });
+  }
 });
