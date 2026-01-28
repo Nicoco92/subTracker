@@ -2,82 +2,68 @@ const Subscription = require("../models/Subscription");
 
 const getDashboard = async (req, res) => {
   try {
-    const subscriptions = await Subscription.find({ user: req.user._id }).sort({
-      nextPaymentDate: 1,
+    if (!req.user) {
+      return res.redirect("/auth/login");
+    }
+    const subscriptions = await Subscription.find({ user: req.user._id });
+    res.render("dashboard", { 
+      subscriptions,
+      plaidConnected: req.user.plaidConnected || false
     });
-    res.render("dashboard", { subscriptions });
-  } catch (err) {
-    console.error("Dashboard error", err.message);
-    res.status(500).send("Failed to load dashboard");
+  } catch (error) {
+    console.error("Dashboard error:", error);
+    res.status(500).send("Erreur serveur");
   }
 };
 
-const getAddForm = (req, res) => {
-  res.render("add", { error: null });
+const getAddPage = (req, res) => {
+  res.render("add");
 };
 
-const createSubscription = async (req, res) => {
-  const { name, price, currency, billingCycle, nextPaymentDate, category } =
-    req.body;
+const addSubscription = async (req, res) => {
   try {
+    const { name, price, currency, billingCycle, nextPaymentDate, category } = req.body;
     await Subscription.create({
       user: req.user._id,
       name,
-      price: Number(price),
-      currency: currency || "USD",
+      price,
+      currency,
       billingCycle,
       nextPaymentDate,
-      category,
+      category
     });
     res.redirect("/subscriptions");
-  } catch (err) {
-    console.error("Create subscription error", err.message);
-    res.status(400).render("add", {
-      error: "Unable to create subscription. Check your fields.",
-    });
+  } catch (error) {
+    res.status(500).send("Erreur lors de l'ajout");
   }
 };
 
 const deleteSubscription = async (req, res) => {
-  const { id } = req.params;
   try {
-    await Subscription.findOneAndDelete({ _id: id, user: req.user._id });
+    await Subscription.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     res.redirect("/subscriptions");
-  } catch (err) {
-    console.error("Delete subscription error", err.message);
-    res.status(500).send("Unable to delete subscription");
+  } catch (error) {
+    res.status(500).send("Erreur lors de la suppression");
   }
 };
 
 const updateSubscription = async (req, res) => {
-  const { id } = req.params;
-  const { name, price, currency, billingCycle, nextPaymentDate, category } =
-    req.body;
-
   try {
+    const { name, price, currency, billingCycle, nextPaymentDate, category } = req.body;
     await Subscription.findOneAndUpdate(
-      { _id: id, user: req.user._id },
-      {
-        name,
-        price: Number(price),
-        currency,
-        billingCycle,
-        nextPaymentDate,
-        category,
-      },
-      { new: true, runValidators: true },
+      { _id: req.params.id, user: req.user._id },
+      { name, price, currency, billingCycle, nextPaymentDate, category }
     );
     res.redirect("/subscriptions");
-  } catch (err) {
-    console.error("Update subscription error", err.message);
-    res.status(500).send("Impossible de modifier l'abonnement");
+  } catch (error) {
+    res.status(500).send("Erreur lors de la mise à jour");
   }
 };
 
 module.exports = {
   getDashboard,
-  getAddForm,
-  createSubscription,
+  getAddPage,
+  addSubscription,
   deleteSubscription,
-  updateSubscription,
+  updateSubscription
 };

@@ -36,7 +36,13 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h1 class="h4 mb-0">Mes abonnements</h1>
       <div>
-        <button id="connect-bank-btn" class="btn btn-connect-bank me-2">Connecter ma banque</button>
+        <% if (plaidConnected) { %>
+          <button id="refresh-bank-btn" class="btn btn-outline-primary me-2">
+            Actualiser les abonnements
+          </button>
+        <% } else { %>
+          <button id="connect-bank-btn" class="btn btn-connect-bank me-2">Connecter ma banque</button>
+        <% } %>
         <a class="btn btn-primary" href="/subscriptions/add">+ Ajouter</a>
       </div>
     </div>
@@ -86,9 +92,7 @@
                     <i class="bi bi-pencil"></i> Modif.
                   </button>
                   <button class="btn btn-outline-secondary btn-sm generate-letter" data-name="<%= sub.name %>" data-price="<%= sub.price %>" data-currency="<%= sub.currency %>" data-cycle="<%= sub.billingCycle %>" data-next="<%= sub.nextPaymentDate.toISOString().slice(0,10) %>" data-category="<%= sub.category %>">Lettre</button>
-                  <form method="POST" action="/subscriptions/<%= sub._id %>/delete" class="d-inline">
-                    <button class="btn btn-outline-danger btn-sm" type="submit">Suppr.</button>
-                  </form>
+                  <button class="btn btn-outline-danger btn-sm delete-subscription-btn" data-id="<%= sub._id %>" data-name="<%= sub.name %>" data-bs-toggle="modal" data-bs-target="#deleteModal">Suppr.</button>
                 </td>
               </tr>
             <% }) %>
@@ -174,7 +178,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content text-center p-4">
         <div class="modal-body">
-          <h4 class="mb-3">Analyse terminée !</h4>
+          <h4 class="mb-3" id="plaidSuccessTitle">Connexion réussie !</h4>
           <p id="plaidSuccessMessage" class="text-muted mb-4"></p>
           <button type="button" class="btn btn-primary w-100" onclick="window.location.reload()">Voir mes abonnements</button>
         </div>
@@ -188,6 +192,27 @@
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="mb-0 fw-bold">Rédaction en cours...</p>
         <small class="text-muted">On écrit votre lettre</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmation de suppression -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer l'abonnement <strong id="deleteSubName"></strong> ?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <form id="deleteForm" method="POST" action="">
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -272,10 +297,25 @@
           editForm.action = `/subscriptions/${id}/update`;
         });
       });
+
+      // Gestion boutons Delete
+      const deleteBtns = document.querySelectorAll('.delete-subscription-btn');
+      const deleteForm = document.getElementById('deleteForm');
+      const deleteSubName = document.getElementById('deleteSubName');
+
+      deleteBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const name = btn.getAttribute('data-name');
+          deleteSubName.textContent = name;
+          deleteForm.action = `/subscriptions/${id}/delete`;
+        });
+      });
     });
   </script>
 
   <script>
+    // Bouton Connecter ma banque
     const connectBtn = document.getElementById('connect-bank-btn');
     if (connectBtn) {
       connectBtn.addEventListener('click', async () => {
@@ -299,10 +339,10 @@
               
               if (txData.success && txData.count > 0) {
                 document.getElementById('plaidSuccessMessage').textContent = 
-                  `${txData.count} nouveaux abonnements ont été détectés et ajoutés à votre tableau de bord.`;
+                  `${txData.count} abonnements ont été détectés et ajoutés à votre tableau de bord.`;
                 new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
               } else {
-                alert("Aucun nouvel abonnement détecté.");
+                alert("Aucun abonnement détecté.");
                 connectBtn.textContent = "Connecter ma banque";
                 connectBtn.disabled = false;
               }
@@ -318,6 +358,40 @@
           alert("Erreur de connexion.");
           connectBtn.disabled = false;
           connectBtn.textContent = "Connecter ma banque";
+        }
+      });
+    }
+
+    // Bouton Actualiser les abonnements
+    const refreshBtn = document.getElementById('refresh-bank-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Actualisation...';
+        try {
+          const txRes = await fetch('/api/plaid/transactions');
+          const txData = await txRes.json();
+          
+          if (txData.success && txData.count > 0) {
+            document.getElementById('plaidSuccessTitle').textContent = 'Actualisation terminée !';
+            document.getElementById('plaidSuccessMessage').textContent = 
+              `${txData.count} nouveaux abonnements ont été détectés et ajoutés.`;
+            new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
+          } else if (txData.success && txData.count === 0) {
+            document.getElementById('plaidSuccessTitle').textContent = 'Tout est à jour !';
+            document.getElementById('plaidSuccessMessage').textContent = 
+              'Aucun nouvel abonnement détecté. Vos données sont déjà à jour.';
+            new bootstrap.Modal(document.getElementById('plaidSuccessModal')).show();
+          } else if (txData.error) {
+            alert("Erreur: " + txData.error);
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '🔄 Actualiser les abonnements';
+          }
+        } catch (err) {
+          console.error("Erreur:", err);
+          alert("Erreur lors de l'actualisation.");
+          refreshBtn.disabled = false;
+          refreshBtn.innerHTML = '🔄 Actualiser les abonnements';
         }
       });
     }

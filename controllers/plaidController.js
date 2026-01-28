@@ -1,7 +1,7 @@
 const { Configuration, PlaidApi, PlaidEnvironments } = require("plaid");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Subscription = require("../models/Subscription");
-
+const User = require("../models/User");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function calculateNextPaymentDate(lastTransactionDateStr) {
@@ -88,8 +88,16 @@ const createLinkToken = async (req, res) => {
 const exchangePublicToken = async (req, res) => {
   const { public_token } = req.body;
   try {
-    const response = await client.itemPublicTokenExchange({ public_token });
-    req.session.plaidAccessToken = response.data.access_token;
+    const response = await client.itemPublicTokenExchange({
+      public_token,
+    });
+    const accessToken = response.data.access_token;
+
+    req.session.plaidAccessToken = accessToken;
+
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(req.user._id, { plaidConnected: true });
+
     res.json({ success: true });
   } catch (error) {
     console.error(
@@ -197,4 +205,16 @@ const syncTransactions = async (req, res) => {
   }
 };
 
-module.exports = { createLinkToken, exchangePublicToken, syncTransactions };
+const getDashboard = async (req, res) => {
+  try {
+    const subscriptions = await Subscription.find({ user: req.user._id });
+    res.render("dashboard", { 
+      subscriptions,
+      plaidConnected: req.user.plaidConnected || false
+    });
+  } catch (error) {
+    res.status(500).send("Erreur serveur");
+  }
+};
+
+module.exports = { createLinkToken, exchangePublicToken, syncTransactions, getDashboard };
