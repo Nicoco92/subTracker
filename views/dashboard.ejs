@@ -74,18 +74,20 @@
         <h1 class="h4 mb-0">Mes abonnements</h1>
         <% if (subscriptions.length > 0) { %>
           <a href="/subscriptions/calendar/download" class="btn btn-export-calendar btn-sm d-flex align-items-center justify-content-center gap-2" title="Exporter vers mon calendrier">
-            <span class="d-none d-sm-inline">Exporter .ics</span>
+            Exporter .ics
           </a>
         <% } %>
       </div>
 
-      <div>
+      <div class="header-actions d-flex align-items-center gap-2">
         <% if (typeof plaidConnected !== 'undefined' && plaidConnected) { %>
-          <button id="refresh-bank-btn" class="btn btn-outline-primary me-2">
+          <button id="refresh-bank-btn" class="btn btn-outline-primary">
             Actualiser les abonnements
           </button>
         <% } else { %>
-          <button id="connect-bank-btn" class="btn btn-connect-bank me-2">Connecter ma banque</button>
+          <button id="connect-bank-btn" class="btn btn-connect-bank">
+            Connecter ma banque
+          </button>
         <% } %>
         
         <a class="btn btn-primary" href="/subscriptions/add">+ Ajouter</a>
@@ -331,7 +333,7 @@
           locale: 'fr',
           aspectRatio: 1.5,
           headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
-          buttonText: { today: "Aujourd'hui", month: 'Mois', list: 'Liste' },
+          buttonText: { today: "Aujourd'hui", month: 'Calendrier', list: 'Liste' },
           events: calendarEvents
         });
         calendar.render();
