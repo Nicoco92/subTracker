@@ -1293,3 +1293,164 @@ body {
   .header-actions a.btn-primary { min-width: 120px; padding: 0.8rem 1rem; }
   .header-actions .btn-connect-bank { min-width: 110px; padding: 0.8rem 0.95rem; }
 }
+
+/* ======================
+   Liste – Tableau des abonnements
+   ====================== */
+
+.table-responsive .table tr {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.table-responsive .table tr:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.table td {
+  padding: 0.9rem;
+  background: transparent;
+}
+.table td::before {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.table td[data-label="Actions"] .btn {
+  min-width: 84px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 10px;
+}
+.table td[data-label="Actions"] .btn + .btn {
+  margin-left: 8px;
+}
+
+.table td[data-label="Service"] strong {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 1rem;
+}
+.table td[data-label="Prix"] {
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.fc .fc-list .fc-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.fc .fc-list .fc-list-item:hover {
+  background: rgba(102,126,234,0.03);
+}
+.fc .fc-list .fc-list-item .fc-list-item-time {
+  width: 92px;
+  color: var(--secondary-color);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.fc .fc-list .fc-list-item .fc-list-item-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.fc .fc-list .fc-list-item .fc-list-item-title {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.fc .fc-list .fc-list-item .fc-list-item-title small {
+  margin-left: 8px;
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.fc .fc-toolbar {
+  padding: 10px 14px;
+  position: relative;
+}
+.fc .fc-toolbar .fc-toolbar-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.fc .fc-toolbar .fc-button {
+  background: linear-gradient(90deg, #6a11cb 0%, #7578d6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 18px rgba(101,76,167,0.14);
+  font-weight: 600;
+}
+.fc .fc-toolbar .fc-button:not(:first-child) { margin-left: 8px; }
+.fc .fc-toolbar .fc-button:focus { outline: none; box-shadow: 0 8px 22px rgba(101,76,167,0.18); }
+
+.fc .fc-list .fc-list-day-cushion {
+  background: #f3f5f9;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fc .fc-list .fc-list-day-text {
+  color: #2b69c9;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.fc .fc-list .fc-list-day-side-text {
+  color: #2b69c9;
+  font-weight: 700;
+}
+
+.fc .fc-list .fc-list-item:nth-child(odd) { background: rgba(0,0,0,0.01); }
+.fc .fc-list .fc-list-item-time { color: var(--secondary-color); width: 88px; flex-shrink: 0; }
+.fc .fc-list .fc-list-item-marker { margin-right: 8px; }
+.fc .fc-list .fc-list-item-title { color: var(--text-dark); }
+
+@media (max-width: 576px) {
+  .fc .fc-toolbar .fc-button { padding: 8px 10px; font-size: 0.9rem; }
+  .fc .fc-toolbar .fc-toolbar-title { position: static; transform: none; text-align: center; margin: 8px 0; }
+}
+
+.fc .fc-list .fc-list-item .fc-list-item-marker {
+  background: currentColor;
+  color: inherit;
+}
+
+@media (max-width: 576px) {
+  .table td[data-label="Cycle"],
+  .table td[data-label="Catégorie"] {
+    display: none !important;
+  }
+  .table td[data-label="Prix"] {
+    font-size: 0.96rem;
+  }
+  .table td[data-label="Actions"] .btn {
+    min-width: 44px;
+    padding: 0.36rem 0.42rem;
+    font-size: 0.8rem;
+  }
+  .fc .fc-list .fc-list-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .fc .fc-list .fc-list-item .fc-list-item-time {
+    width: 70px;
+    font-size: 0.9rem;
+  }
+}
