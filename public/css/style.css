@@ -1252,3 +1252,44 @@ body {
     padding: 10px;
   }
 }
+
+/* Ensure header action sizing (reapplied) */
+.btn-export-calendar::before { content: none !important; }
+.header-actions .btn {
+  padding: 0.7rem 0.95rem;
+  font-size: 1rem;
+  min-width: 100px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.header-actions .btn-connect-bank {
+  padding: 0.7rem 1rem;
+  min-width: 120px;
+  box-shadow: 0 6px 14px rgba(34,139,86,0.12);
+}
+.header-actions a.btn-primary {
+  padding: 0.75rem 1.25rem;
+  min-width: 140px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    width: 100%;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .header-actions .btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+    font-size: 0.98rem;
+  }
+  .btn-export-calendar { white-space: nowrap; }
+  .header-actions a.btn-primary { min-width: 120px; padding: 0.8rem 1rem; }
+  .header-actions .btn-connect-bank { min-width: 110px; padding: 0.8rem 0.95rem; }
+}
