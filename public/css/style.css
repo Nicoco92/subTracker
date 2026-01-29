@@ -1218,17 +1218,14 @@ body {
   }
 
   .edit-subscription-btn::before {
-    content: "✏️";
     font-size: 16px;
     line-height: 1;
   }
   .generate-letter::before {
-    content: "✉️";
     font-size: 16px;
     line-height: 1;
   }
   .delete-subscription-btn::before {
-    content: "🗑️";
     font-size: 16px;
     line-height: 1;
   }
