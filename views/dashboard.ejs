@@ -32,13 +32,49 @@
 <body>
   <div class="container py-4">
     <%- include('partials/navbar') %>
-    
+
+    <% 
+      let totalSubs = subscriptions.length;
+      let upcomingCount = 0;
+      let totalMonthly = 0;
+      const now = new Date();
+      const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      subscriptions.forEach(function(s) {
+        const d = new Date(s.nextPaymentDate);
+        if (d <= in7) upcomingCount++;
+        let m = 0;
+        if (s.billingCycle === 'monthly') m = s.price;
+        else if (s.billingCycle === 'yearly') m = s.price / 12;
+        else if (s.billingCycle === 'weekly') m = s.price * 4;
+        else if (s.billingCycle === 'quarterly') m = s.price / 3;
+        else m = s.price;
+        totalMonthly += m;
+      });
+    %>
+
+    <div class="summary-cards d-flex gap-3 mb-3">
+      <div class="summary-card p-3 flex-fill">
+        <div class="icon">📦</div>
+        <div>
+          <div class="label small text-muted">Total abonnements</div>
+          <div class="value h5 mt-1 fw-bold"><%= totalSubs %></div>
+        </div>
+      </div>
+      <div class="summary-card p-3 flex-fill">
+        <div class="icon">💳</div>
+        <div>
+          <div class="label small text-muted">Dépense / mois</div>
+          <div class="value h5 mt-1 fw-bold"><%= totalMonthly.toFixed(2) %> €</div>
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-3">
         <h1 class="h4 mb-0">Mes abonnements</h1>
         <% if (subscriptions.length > 0) { %>
-          <a href="/subscriptions/calendar/download" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" title="Exporter vers mon calendrier">
-            <span>📅</span> <span class="d-none d-sm-inline">Exporter .ics</span>
+          <a href="/subscriptions/calendar/download" class="btn btn-export-calendar btn-sm d-flex align-items-center justify-content-center gap-2" title="Exporter vers mon calendrier">
+            <span class="d-none d-sm-inline">Exporter .ics</span>
           </a>
         <% } %>
       </div>
@@ -229,7 +265,6 @@
     </div>
   </div>
 
-  <!-- Modal de confirmation génération lettre -->
   <div class="modal fade" id="confirmLetterModal" tabindex="-1" aria-labelledby="confirmLetterModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -254,7 +289,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // CALENDRIER
+
       const calendarEl = document.getElementById('calendar');
       
       function getColorByCategory(category) {
@@ -302,13 +337,13 @@
         calendar.render();
       }
 
-      // BADGES COULEURS
+
       document.querySelectorAll('.category-badge').forEach(badge => {
         const cat = badge.getAttribute('data-category');
         badge.style.color = getColorByCategory(cat || '');
       });
 
-      // EDIT MODAL
+
       const editBtns = document.querySelectorAll('.edit-subscription-btn');
       const editForm = document.getElementById('editForm');
       const editName = document.getElementById('editName');
