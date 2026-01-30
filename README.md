@@ -3,10 +3,9 @@
 SubTracker est un petit service permettant de **centraliser et suivre vos abonnements** :  
 tableau de bord, calendrier des paiements, export des échéances, synchronisation bancaire et génération de lettres de résiliation assistée par **IA**.
 
-Réaliser par : Johary RAKOTONIRINA, Nicolas CONTRERAS TIBOCHA et Maxime YE
----
+## Réaliser par : Johary RAKOTONIRINA, Nicolas CONTRERAS TIBOCHA et Maxime YE
 
-##  Présentation
+## Présentation
 
 SubTracker vous permet de :
 
@@ -18,7 +17,7 @@ SubTracker vous permet de :
 
 ---
 
-##  Installation (locale)
+## Installation (locale)
 
 ### Prérequis
 
@@ -39,9 +38,9 @@ npm install
 
 ---
 
-##  Technologies utilisées
+## Technologies utilisées
 
-### Backend
+## Backend
 
 - **Node.js**  
   Environnement JavaScript côté serveur  
@@ -57,7 +56,7 @@ npm install
 
 ---
 
-### Frontend
+## Frontend
 
 - **EJS**  
   Moteur de templates  
@@ -72,3 +71,19 @@ npm install
   Confirmation de suppression, actions dynamiques
 
 ---
+
+## Plaid
+
+Il faut se créer un compte gratuitement et récupérer le **PLAID_CLIENT_ID** et le **PLAID_SECRET**.
+
+## Gemini
+
+Générer une clé API de **Gemini** gratuitement.
+
+## Système de notification
+
+### Pour utliser le système de notification vous devez :
+
+**EMAIL_USER** = Mettre un mail dont vous être le propriétaire.
+
+**EMAIL_PASS** = Avec par exemple un mail Google se connecter, aller dans les paramètres d'application et aller dans **Mots de passe des applications** et générer un mot de passe.
