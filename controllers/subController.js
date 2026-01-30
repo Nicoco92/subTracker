@@ -134,6 +134,20 @@ const exportCalendar = async (req, res) => {
     res.redirect("/subscriptions");
   }
 };
+const getAllSubscriptionsJson = async (req, res) => {
+  try {
+    // On récupère tous les abonnements de l'utilisateur connecté
+    const subscriptions = await Subscription.find({ user: req.user._id });
+
+    // On renvoie le tout directement en JSON
+    res.json({
+      count: subscriptions.length,
+      subscriptions: subscriptions,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
 
 module.exports = {
   getDashboard,
@@ -142,4 +156,5 @@ module.exports = {
   updateSubscription,
   getAddForm,
   exportCalendar,
+  getAllSubscriptionsJson,
 };

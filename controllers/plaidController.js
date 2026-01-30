@@ -209,7 +209,16 @@ const syncTransactions = async (req, res) => {
       await Subscription.insertMany(filteredNewSubscriptions);
     }
 
-    res.json({ success: true, count: filteredNewSubscriptions.length });
+    res.json({
+      success: true,
+      count: filteredNewSubscriptions.length,
+
+      // Les abonnements que l'IA a trouvé
+      subscriptions_found: filteredNewSubscriptions,
+
+      // La liste brute donnée par Plaid (pour vérification)
+      raw_plaid_transactions: transactions,
+    });
   } catch (error) {
     console.error(
       "Erreur syncTransactions:",
@@ -222,13 +231,33 @@ const syncTransactions = async (req, res) => {
 const getDashboard = async (req, res) => {
   try {
     const subscriptions = await Subscription.find({ user: req.user._id });
-    res.render("dashboard", { 
+    res.render("dashboard", {
       subscriptions,
-      plaidConnected: req.user.plaidConnected || false
+      plaidConnected: req.user.plaidConnected || false,
     });
   } catch (error) {
     res.status(500).send("Erreur serveur");
   }
 };
 
-module.exports = { createLinkToken, exchangePublicToken, syncTransactions, getDashboard };
+const createSandboxPublicToken = async (req, res) => {
+  try {
+    // On demande à Plaid de créer un faux token pour la banque "ins_109508" (Une banque de test standard)
+    const publicTokenResponse = await client.sandboxPublicTokenCreate({
+      institution_id: "ins_109508",
+      initial_products: ["transactions"],
+    });
+    res.json({ public_token: publicTokenResponse.data.public_token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  createLinkToken,
+  exchangePublicToken,
+  syncTransactions,
+  getDashboard,
+  createSandboxPublicToken,
+};
